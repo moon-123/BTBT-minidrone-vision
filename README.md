@@ -54,3 +54,148 @@ MNI_BTBT
 
 
 ## 4. 코드
+
+```matlab
+clear;
+[drone, cam] = Init_drone();
+
+preview(cam);
+ringDetected = false;
+drone_distance = 0;
+
+camX = 480;
+camY = 200;
+
+takeoff(drone);
+moveup(drone, 'Distance', 0.3, 'Speed', 1);
+
+% 1단계
+while 1
+    frame = snapshot(cam);
+    disp("take a snapshot");
+    pause(1);
+    hsv = rgb2hsv(frame);
+    h = hsv(:, :, 1);
+    s = hsv(:, :, 2);
+    binary_red = ((h > 0.95) & (h <= 1.0) | (h < 0.05) & (h >= 0)) & (0.6 < s) & (s < 0.97);
+   
+    [isXCenter, isYCenter] = make_center(binary_red, camX, camY, drone, "red");
+
+    if ~isXCenter || ~isYCenter
+        continue;
+    else
+        disp("arrive");
+        moveforward(drone, 'distance', 2, 'speed', 1);
+        % pause;
+        turn(drone, deg2rad(90));
+        % land(drone);
+        % clear drone;
+        break;
+    end
+end
+
+% c = 1;
+% 2단계, 3단계
+for c = 1:2
+    while 1
+        isRingXCenter = false;
+        isRingYCenter = false;
+        frame = snapshot(cam);
+        % disp("take a snapshot");
+        pause(1);
+        hsv = rgb2hsv(frame);
+        h = hsv(:, :, 1);
+        s = hsv(:, :, 2);
+        if c == 1
+            binary_red = ((h > 0.95) & (h <= 1.0) | (h < 0.05) & (h >= 0)) & (0.6 < s) & (s < 0.97);
+        elseif c == 2
+            binary_green = (h > 0.95) & (h <= 1.0) & (0.6 < s) & (s < 0.97); % h 범위 바꾸기
+        end
+    
+        % if red
+        if sum(binary_red, 'all') > 1500
+            [isXCenter, isYCenter] = make_center(binary_red, camX, camY, drone, "red");
+        
+            if ~isXCenter || ~isYCenter
+                continue;
+          
+            else 
+                %disp("red_arrive");
+                moveforward(drone, 'distance', 1.5 + drone_distance, 'speed', 1);
+                pause(1);
+                turn(drone, deg2rad(90));
+                %pause(1);
+                %land(drone);
+                %clear drone;
+                break;
+            end
+        % if green
+        %{
+        elseif sum(binary_green > 500)
+    
+            [isXCenter, isYCenter] = make_center(binary_green, camX, camY, drone, "green");
+        
+            if ~isXCenter || ~isYCenter
+                continue;
+          
+            else 
+                moveforward(drone, 'distance', 1.5 + drone_distance, 'speed', 1);
+                pause;
+                % turn(drone, deg2rad(90));
+                % turn 각도 바꾸기
+                land(drone);
+                clear drone;
+                break;
+            end
+        %}
+        else
+            binary_blue = (h > 0.58) & (h <= 0.65) & (0.4 < s) & (s < 0.97);
+            ringDetected = find_ring(binary_blue);
+            if ringDetected
+                %disp("find_ring");
+                mask_blue = imfill(binary_blue,'holes');
+                % imshow(mask_image);
+                holes = mask_blue - binary_blue;
+                % imshow(holes);
+                gap = abs(sum(binary_blue, 'all') - sum(mask_blue, 'all'));
+                disp(gap);
+                if gap < 1800
+                    isHole = false;
+                    %disp("not Hole");
+                else
+                    isHole = true;
+                    %disp("is Hole");
+                end
+                
+                if isHole
+                    [isRingXCenter, isRingYCenter] = ring_center(holes, camX, camY, drone);
+                else
+                    % 여기
+
+                    moveToRing(binary_blue, camX, camY, drone, drone_distance);
+                end
+    
+                if ~isRingXCenter || ~isRingYCenter
+                    continue
+                else
+                    moveforward(drone, 'distance', 2 + drone_distance, 'speed', 1);
+                    pause(1);
+                    turn(drone, rad2deg(-90));
+                    %land(drone);
+                    %clear drone;
+                    break;
+                end
+    
+            else
+                moveback(drone, 'distance', 0.5, 'speed', 1);
+                drone_distance = drone_distance + 0.5;
+                continue;
+            end
+        end
+    end
+end
+```
+
+```
+
+```
