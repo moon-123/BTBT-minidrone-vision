@@ -54,7 +54,7 @@ MNI_BTBT
 
 
 ## 4. 코드
-
+### Code
 ```matlab
 clear;
 [drone, cam] = Init_drone();
@@ -196,6 +196,143 @@ for c = 1:2
 end
 ```
 
+### Functions
+```matlab
+function [drone, cam] = Init_drone()
+    drone = ryze("Tello");
+    cam = camera(drone);
+end
+
+
+function [flagX, flagY] = get_flags(stats)
+    for i = 1:size(stats)
+        if stats.MajorAxisLength(i)==max(stats.MajorAxisLength)
+            maxI=i;
+            break;
+        end
+    end
+    flagX = max(stats.Centroid(maxI, 1));
+    flagY = max(stats.Centroid(maxI, 2));
+end
+
+function [isXCenter, isYCenter] = make_center(binary, camX, camY, drone, color)
+    isXCenter = false;
+    isYCenter = false;
+    %disp("function make_center");
+    disp(sum(binary, 'all'));
+    if color == "red"
+        max = 30000;
+        min = 1000;
+    elseif color == "green"
+        max = 30000;
+        min = 1000;
+    elseif color == "purple"
+        max = 3000;
+        min = 1000;
+    end
+
+    if sum(binary, 'all') > min && sum(binary, 'all') < max
+        %disp("is red");
+        stats = regionprops('table', binary, 'Centroid', 'MajorAxisLength', 'MinorAxisLength');
+        [flagX, flagY] = get_flags(stats);
+    
+        if abs(camX - flagX) < 50
+            isXCenter = true;
+    
+        elseif (camX < flagX)
+            isXCenter = false;
+            moveright(drone, 'distance', 0.2, 'Speed', 1);
+    
+        elseif (camX > flagX)
+            isXCenter = false;
+            moveleft(drone, 'distance', 0.3, 'Speed', 1);
+    
+        end
+   
+        if abs(camY - flagY) < 50
+            isYCenter = true;
+
+        elseif (camY < flagY)
+            isYCenter = false;
+            movedown(drone, 'distance', 0.2, 'Speed', 1);
+
+        elseif (camY > flagY)
+            isYCenter = false;
+            moveup(drone, 'distance', 0.3, 'Speed', 1);
+        end
+    end
+end
+
+function [isXCenter, isYCenter] = ring_center(holes, camX, camY, drone)
+    isXCenter = false;
+    isYCenter = false;
+
+    if sum(holes, 'all') > 1000
+    %disp("is ring");
+    stats = regionprops('table', holes, 'Centroid', 'MajorAxisLength', 'MinorAxisLength');
+    [flagX, flagY] = get_flags(stats);
+
+        if abs(camX - flagX) < 50
+            isXCenter = true;
+    
+        elseif (camX < flagX)
+            isXCenter = false;
+            moveright(drone, 'distance', 0.2, 'Speed', 1);
+    
+        elseif (camX > flagX)
+            isXCenter = false;
+            moveleft(drone, 'distance', 0.3, 'Speed', 1);
+    
+        end
+    
+        if abs(camY - flagY) < 50
+            isYCenter = true;
+    
+        elseif camY < flagY 
+            isYCenter = false;
+            movedown(drone, 'distance', 0.2, 'Speed', 1);
+    
+        elseif camY > flagY
+            isYCenter = false;
+            moveup(drone, 'distance', 0.3, 'Speed', 1);
+        end
+    end
+end
+
+
+function ringDetected = find_ring(binary_blue)
+    ringDetected = false;
+    if sum(binary_blue, 'all') > 1000
+        ringDetected = true;
+    end
+end
+
+% 0.5씩 뒤로 갈 때마다 1.4배씩 더 조절
+function R = moveToRing(binary_blue, camX, camY, drone, d)
+    stats = regionprops(binary_blue, 'BoundingBox');
+
+    max = 0;
+    for k = 1:length(stats)
+        if max < stats(k).BoundingBox(3)
+            max_idx = k;
+            max = stats(k).BoundingBox(3);
+        end
+    end
+    
+    flagX = stats(max_idx).BoundingBox(1) + (stats(max_idx).BoundingBox(3) / 2);
+    flagY = stats(max_idx).BoundingBox(2) + (stats(max_idx).BoundingBox(4) / 2);
+
+    if (camX < flagX)
+        moveright(drone, 'distance', 0.4 + (0.32 * d), 'Speed', 1);
+    elseif (camX > flagX)
+        moveleft(drone, 'distance', 0.4 + (0.32 * d), 'Speed', 1);
+    end
+
+    if camY < flagY 
+        movedown(drone, 'distance', 0.4 + (0.32 * d), 'Speed', 1);
+    elseif camY > flagY
+        moveup(drone, 'distance', 0.4 + (0.32 * d), 'Speed', 1);
+    end
+end
 ```
 
-```
