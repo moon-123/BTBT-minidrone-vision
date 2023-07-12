@@ -16,6 +16,7 @@ MNI_BTBT
 # 2. 전략
 
 실제 링 스펙과 비슷한 스펙으로 간이 트랙을 제작함
+
 <img width="925" alt="스크린샷 2023-07-12 오후 11 49 06" src="https://github.com/moon-123/MNI_BTBT/assets/59769304/aaa3c88c-d87e-4696-a836-df21dd95146c">
 
 
