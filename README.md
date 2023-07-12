@@ -7,13 +7,21 @@ MNI_BTBT
 # 미니드론 자율비행을 위한 전략 및 알고리즘
 
 
-## 1. 목표
+# 1. 목표
 
 
 ![image](https://github.com/moon-123/MNI_BTBT/assets/59769304/98863e75-6402-417c-a3e5-2575331e3352)
 
 
-## 2. 전략
+# 2. 전략
+
+실제 링 스펙과 비슷한 스펙으로 간이 트랙을 제작함
+<img width="925" alt="스크린샷 2023-07-12 오후 11 49 06" src="https://github.com/moon-123/MNI_BTBT/assets/59769304/aaa3c88c-d87e-4696-a836-df21dd95146c">
+
+
+리허설 후 표식과 링 색상을 정확하게 잡는것이 중요하다고 판단함
+(아래 코드설명에는 추가하지 못하였습니다.)
+
 
 드론이 링을 통과하기 위해선 링이 시야에 잡혀야한다.
 또한 링의 구멍이 드론 시야 안에 모두 들어오는 것이 중요하다고 생각했다.
@@ -23,20 +31,28 @@ MNI_BTBT
 
 
 
-1단계 
-- 드론 이륙, 표식 인식을 위해 상승
+#### 1단계 
+- 드론 이륙
+- 링 인식 후 중점방향으로 이동
+(regionprops 함수의 BoundingBox 사용)
 - 표식 인식, 중앙값 맞추기
 - 표식 앞까지 전진
 - 회전
 
-2단계, 3단계
-- 링이 보이지 않으면 뒤로 이동
-- 원이 보이지 않으면 보이는 링 중점을 계산하여 상하좌우로 이동
-  - regionprops 함수의 BoundingBox 사용
-- 표식이 보이면 표식 중앙 계산 후 전진
-- 만약 뒤로 이동 후 원을 본다면 원 중심 계산 후 전진
+#### 2단계, 3단계
+- 표식이 보이면
+  - 표식 인식, 중앙값 맞추기
+  - 표식 앞까지 전진
+  - 회전
+ 
+- 표식이 보이지 않으면
+  - 링 인식 후 중점방향으로 이동
+  (regionprops 함수의 BoundingBox 사용)
+  - 표식 인식, 중앙값 맞추기
+  - 표식 앞까지 전진
+  - 회전
 
-4단계
+#### 4단계
 - 회전 표식을 보고 45도 회전
 - 전진
 - 원의 가로축 세로축 길이가 일치하도록 회전, 이동
@@ -44,23 +60,30 @@ MNI_BTBT
 - 표식 픽셀값 계산 후 2m지점에서 착륙
 
 
+# 3. 알고리즘
 
-## 3. 알고리즘
-   
 <img width="1270" alt="스크린샷 2023-07-10 오전 2 16 15" src="https://github.com/moon-123/MNI_BTBT/assets/59769304/63c3204b-8575-4fea-b8ec-392e09f9b24c">
 
-<img width="1251" alt="스크린샷 2023-07-10 오전 2 19 13" src="https://github.com/moon-123/MNI_BTBT/assets/59769304/781e6dcb-1057-408d-9e1c-e0ff3125bc6b">
+<img width="528" alt="스크린샷 2023-07-12 오후 11 16 10" src="https://github.com/moon-123/MNI_BTBT/assets/59769304/04baec80-e76f-43b5-9913-da00708d3f3d">
 
 
+# 4. 코드
 
-## 4. 코드
+- 1, 2, 3단계의 경우 동작이 비슷하기 때문에 for문을 사용함
+- 반복되는 부분의 경우 함수로 만들어 코드 가독성이 좋게 함
+(코드블럭 위가 해당 블럭 설명입니다)
+
 ### Code
+- 드론 초기화와 변수 선언
+- 이륙 후 초기 위치 조정
 ```matlab
 clear;
 [drone, cam] = Init_drone();
 
 preview(cam);
 ringDetected = false;
+isRingXCenter = false;
+isRingYCenter = false;
 drone_distance = 0;
 
 camX = 480;
@@ -68,51 +91,33 @@ camY = 200;
 
 takeoff(drone);
 moveup(drone, 'Distance', 0.3, 'Speed', 1);
+```
 
-% 1단계
-while 1
-    frame = snapshot(cam);
-    disp("take a snapshot");
-    pause(1);
-    hsv = rgb2hsv(frame);
-    h = hsv(:, :, 1);
-    s = hsv(:, :, 2);
-    binary_red = ((h > 0.95) & (h <= 1.0) | (h < 0.05) & (h >= 0)) & (0.6 < s) & (s < 0.97);
-   
-    [isXCenter, isYCenter] = make_center(binary_red, camX, camY, drone, "red");
-
-    if ~isXCenter || ~isYCenter
-        continue;
-    else
-        disp("arrive");
-        moveforward(drone, 'distance', 2, 'speed', 1);
-        % pause;
-        turn(drone, deg2rad(90));
-        % land(drone);
-        % clear drone;
-        break;
-    end
-end
-
-% c = 1;
-% 2단계, 3단계
-for c = 1:2
+- 기본 동작
+- c 값에 따라 찾아야하는 표식을 다르게 설정
+- 이미지 전처리 과정
+```matlab
+for c = 1:3
     while 1
-        isRingXCenter = false;
-        isRingYCenter = false;
         frame = snapshot(cam);
         % disp("take a snapshot");
         pause(1);
         hsv = rgb2hsv(frame);
         h = hsv(:, :, 1);
         s = hsv(:, :, 2);
-        if c == 1
+        if c == 1 || c == 2
             binary_red = ((h > 0.95) & (h <= 1.0) | (h < 0.05) & (h >= 0)) & (0.6 < s) & (s < 0.97);
-        elseif c == 2
+        elseif c == 3
             binary_green = (h > 0.95) & (h <= 1.0) & (0.6 < s) & (s < 0.97); % h 범위 바꾸기
         end
-    
-        % if red
+        ...
+```
+
+- 표식이 red일 때 표식이 보이면 실행되는 부분
+- 표식 중앙이 맞으면 전진 후 회전
+- 동작이 끝났으므로 while문 break
+```matlab
+        % if red, c == 1, 2
         if sum(binary_red, 'all') > 1500
             [isXCenter, isYCenter] = make_center(binary_red, camX, camY, drone, "red");
         
@@ -124,13 +129,15 @@ for c = 1:2
                 moveforward(drone, 'distance', 1.5 + drone_distance, 'speed', 1);
                 pause(1);
                 turn(drone, deg2rad(90));
-                %pause(1);
-                %land(drone);
-                %clear drone;
                 break;
             end
-        % if green
-        %{
+```
+
+- 표식이 green일 때 표식이 보이면 실행되는 부분
+- 표식 중앙이 맞으면 전진 후 회전
+- 동작이 끝났으므로 while문 break
+```matlab
+        % if green, c == 3
         elseif sum(binary_green > 500)
     
             [isXCenter, isYCenter] = make_center(binary_green, camX, camY, drone, "green");
@@ -147,34 +154,56 @@ for c = 1:2
                 clear drone;
                 break;
             end
-        %}
+```
+
+- 표식이 보이지 않는다면 링을 인식
+- 링 중점 계산하고 이동하는 부분
+- 원이 인식되는지 확인하기 위해 gap 변수 설정
+  - gap이 일정값 이상이면 원이 인식된 것
+```matlab
+        ...
         else
             binary_blue = (h > 0.58) & (h <= 0.65) & (0.4 < s) & (s < 0.97);
             ringDetected = find_ring(binary_blue);
             if ringDetected
-                %disp("find_ring");
+                disp("find_ring");
                 mask_blue = imfill(binary_blue,'holes');
-                % imshow(mask_image);
                 holes = mask_blue - binary_blue;
-                % imshow(holes);
                 gap = abs(sum(binary_blue, 'all') - sum(mask_blue, 'all'));
                 disp(gap);
                 if gap < 1800
                     isHole = false;
-                    %disp("not Hole");
+                    disp("not Hole");
                 else
                     isHole = true;
-                    %disp("is Hole");
+                    disp("is Hole");
                 end
-                
+                ...
+```
+
+- 만약 원이 인식되면 실행되는 부분
+- ring_center는 원의 중점을 찾아 드론을 제어하는 함수
+```matlab
+                ...
                 if isHole
                     [isRingXCenter, isRingYCenter] = ring_center(holes, camX, camY, drone);
-                else
-                    % 여기
+                ...
+```
 
+- 만약 원이 인식되지 않는다면 실행되는 부분
+- moveToRing은 보이는 링의 중점을 계산하여 드론을 링 중앙쪽으로 제어하는 함수
+```matlab
+                ...
+                else
                     moveToRing(binary_blue, camX, camY, drone, drone_distance);
                 end
-    
+                ...
+```
+
+- 원 중점이 맞으면 드론을 전진 후 회전
+- 동작이 끝나면 while문 break
+```matlab
+                ...
                 if ~isRingXCenter || ~isRingYCenter
                     continue
                 else
@@ -185,7 +214,13 @@ for c = 1:2
                     %clear drone;
                     break;
                 end
-    
+                ...
+```
+
+- 링과 표식도 보이지 않는다면 뒤로 이동
+- 이동한 거리만큼 더 전진해야 하기 때문에 drone_distance로 이동한 거리 저장
+```matlab
+            ...
             else
                 moveback(drone, 'distance', 0.5, 'speed', 1);
                 drone_distance = drone_distance + 0.5;
@@ -197,13 +232,17 @@ end
 ```
 
 ### Functions
+
+- 드론 초기화
 ```matlab
 function [drone, cam] = Init_drone()
     drone = ryze("Tello");
     cam = camera(drone);
 end
+```
 
-
+- 객체의 중점을 계산하는 함수
+```matlab
 function [flagX, flagY] = get_flags(stats)
     for i = 1:size(stats)
         if stats.MajorAxisLength(i)==max(stats.MajorAxisLength)
@@ -214,7 +253,9 @@ function [flagX, flagY] = get_flags(stats)
     flagX = max(stats.Centroid(maxI, 1));
     flagY = max(stats.Centroid(maxI, 2));
 end
-
+```
+- 표식의 중점을 찾아 이동하는 함수
+```matlab
 function [isXCenter, isYCenter] = make_center(binary, camX, camY, drone, color)
     isXCenter = false;
     isYCenter = false;
@@ -262,7 +303,10 @@ function [isXCenter, isYCenter] = make_center(binary, camX, camY, drone, color)
         end
     end
 end
+```
 
+- 원의 중점을 찾아 이동하는 함수
+```matlab
 function [isXCenter, isYCenter] = ring_center(holes, camX, camY, drone)
     isXCenter = false;
     isYCenter = false;
@@ -298,15 +342,20 @@ function [isXCenter, isYCenter] = ring_center(holes, camX, camY, drone)
         end
     end
 end
+```
 
-
+- 링을 찾으면 TRUE를 반환하는 함수
+```matlab
 function ringDetected = find_ring(binary_blue)
     ringDetected = false;
     if sum(binary_blue, 'all') > 1000
         ringDetected = true;
     end
 end
+```
 
+- 링의 중점을 찾아 이동하는 함수
+```matlab
 % 0.5씩 뒤로 갈 때마다 1.4배씩 더 조절
 function R = moveToRing(binary_blue, camX, camY, drone, d)
     stats = regionprops(binary_blue, 'BoundingBox');
