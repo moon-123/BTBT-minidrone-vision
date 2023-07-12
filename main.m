@@ -19,7 +19,7 @@ while 1
     hsv = rgb2hsv(frame);
     h = hsv(:, :, 1);
     s = hsv(:, :, 2);
-    binary_red = ((h > 0.95) & (h <= 1.0) | (h < 0.05) & (h >= 0)) & (0.6 < s) & (s < 0.97);
+    binary_red = ((h > 0.97) & (h <= 1.0) | (h < 0.02) & (h >= 0)) & (0.7 < s) & (s < 0.97);
    
     [isXCenter, isYCenter] = make_center(binary_red, camX, camY, drone, "red");
 
@@ -49,7 +49,7 @@ for c = 1:2
         h = hsv(:, :, 1);
         s = hsv(:, :, 2);
         if c == 1
-            binary_red = ((h > 0.95) & (h <= 1.0) | (h < 0.05) & (h >= 0)) & (0.6 < s) & (s < 0.97);
+            binary_red = ((h > 0.97) & (h <= 1.0) | (h < 0.02) & (h >= 0)) & (0.7 < s) & (s < 0.97);
         elseif c == 2
             binary_green = (h > 0.95) & (h <= 1.0) & (0.6 < s) & (s < 0.97); % h 범위 바꾸기
         end
@@ -91,7 +91,7 @@ for c = 1:2
             end
         %}
         else
-            binary_blue = (h > 0.58) & (h <= 0.65) & (0.4 < s) & (s < 0.97);
+            binary_blue = (h > 0.56) & (h <= 0.62) & (0.4 < s) & (s < 0.97);
             ringDetected = find_ring(binary_blue);
             if ringDetected
                 %disp("find_ring");
