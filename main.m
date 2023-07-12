@@ -19,7 +19,7 @@ binary_blue = 0;
 
 camX = 480;
 camY = 210;
-%{
+
 for c = 1:3
     isRed = false;
     isGreen = false;
@@ -79,7 +79,7 @@ for c = 1:3
         end
     end
 end
-%}
+
 % 4단계
 disp("level4");
 while 1
