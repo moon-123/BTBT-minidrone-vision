@@ -91,9 +91,6 @@ while 1
 
     binary_blue = (h > 0.52) & (h <= 0.68) & (0.4 < s) & (s < 0.97) & B;
     binary_purple = (h > 0.7) & (h <= 0.9) & (0.1 < s) & (s < 0.6) & purple;
-    % binary_purple = ((h > 0.97) | (h < 0.02)) & (0.7 < s) & (s < 0.97) & R;
-    % stats = regionprops(binary_blue, 'BoundingBox');
-    % [blueX, blueY] = get_flags(stats);
 
     if ~no_more_blue
         [isXCenter, isYCenter] = make_center(binary_blue, camX, camY, drone);
@@ -109,7 +106,7 @@ while 1
             disp("make Horizon");
             isHorizon = makeHorizon(binary_blue, drone);
         else
-            if sum(binary_purple, 'all') < 2000
+            if sum(binary_purple, 'all') < 2100
                 disp(sum(binary_purple, 'all'));
                 moveforward(drone, 'distance', 0.2, 'WaitUntilDone', false);
                 pause(1);
@@ -122,8 +119,6 @@ while 1
         end
     end
 end
-
-% 미완성
 
 %{========== 함수 ==========}
 
@@ -276,10 +271,13 @@ end
 
 function isHorizon = makeHorizon(image, drone)
     [y_left, y_right] = getHorizon(image);
-    if y_left < y_right
+    if abs(y_left - y_right) < 20
+        isHorizon = true;
+    elseif y_left < y_right
         turn(drone, deg2rad(7));
+        isHorizon = false;
     elseif y_left > y_right
-        turn(drone, deg2rad(-7));
+        turn(drone, deg2rad(-5));
+        isHorizon = false;
     end
-    isHorizon = true;
 end
