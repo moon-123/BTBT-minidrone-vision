@@ -6,7 +6,6 @@ pause(1);
 moveup(drone, 'Distance', 0.3, 'Speed', 1, 'WaitUntilDone', false);
 pause(1);
 
-preview(cam);
 
 ringDetected = false;
 isRingXCenter = false;
