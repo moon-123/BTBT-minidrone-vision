@@ -6,8 +6,6 @@ pause(1);
 moveup(drone, 'Distance', 0.3, 'Speed', 1, 'WaitUntilDone', false);
 pause(1);
 
-preview(cam);
-
 ringDetected = false;
 isRingXCenter = false;
 isRingYCenter = false;
@@ -48,7 +46,7 @@ for c = 1:3
           
             else 
                 disp("red_arrive");
-                moveforward(drone, 'distance', 2, 'speed', 1);
+                moveforward(drone, 'distance', 3, 'speed', 1);
                 turn(drone, deg2rad(90));
                 pause(2);
                 break;
