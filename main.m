@@ -6,6 +6,7 @@ pause(1);
 moveup(drone, 'Distance', 0.3, 'Speed', 1, 'WaitUntilDone', false);
 pause(1);
 
+preview(cam);
 
 ringDetected = false;
 isRingXCenter = false;
@@ -30,7 +31,7 @@ for c = 1:3
         pause(1);
 
         if c == 1 || c == 2
-            binary_red = ((h > 0.97) | (h < 0.02)) & (0.7 < s) & (s < 0.97) & R;
+            binary_red = ((h > 0.95) | (h < 0.02)) & (0.4 < s) & (s < 0.97) & R;
         elseif c == 3
             binary_green = (h > 0.25) & (h <= 0.4) & (0.1 < s) & (s < 0.6) & G;
         end
@@ -47,8 +48,7 @@ for c = 1:3
           
             else 
                 disp("red_arrive");
-                moveforward(drone, 'distance', 2, 'speed', 1, 'WaitUntilDone', false);
-                pause(2);
+                moveforward(drone, 'distance', 2, 'speed', 1);
                 turn(drone, deg2rad(90));
                 pause(2);
                 break;
@@ -65,9 +65,9 @@ for c = 1:3
           
             else 
                 disp("green_arrive");
-                moveforward(drone, 'distance', 2, 'speed', 1, 'WaitUntilDone', false);
-                pause(2);
+                moveforward(drone, 'distance', 3, 'speed', 1);
                 turn(drone, deg2rad(45));
+                pause(2);
                 break;
             end
         
@@ -155,6 +155,7 @@ end
 
 function [flagX, flagY] = get_flags(stats)
     max = 0;
+    max_idx = 0;
     
     for k = 1:length(stats)
         if max < stats(k).BoundingBox(3)
@@ -280,3 +281,26 @@ function isHorizon = makeHorizon(image, drone)
         isHorizon = false;
     end
 end
+
+
+function moveToRing(binary_blue, camX, camY, drone)
+    stats = regionprops(binary_blue, 'BoundingBox');
+    [flagX, flagY] = get_flags(stats);
+    if (camX < flagX)
+        moveright(drone, 'distance', 0.4, 'Speed', 1, 'WaitUntilDone', false);
+        pause(2);
+    elseif (camX > flagX)
+        moveleft(drone, 'distance', 0.4, 'Speed', 1, 'WaitUntilDone', false);
+        pause(2);
+    end
+
+    if (camY < flagY)
+        movedown(drone, 'distance', 0.2, 'Speed', 1, 'WaitUntilDone', false);
+        pause(2);
+    elseif (camY > flagY)
+        moveup(drone, 'distance', 0.4, 'Speed', 1, 'WaitUntilDone', false);
+        pause(2);
+    end
+end
+
+
